@@ -1,5 +1,5 @@
 import * as React from "react";
-import * as katex from "katex";
+import katex from "katex";
 import "katex/dist/katex.min.css";
 
 export const Katex: React.FC<{ src: string }> = ({ src }) => {
