@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -c green,blue --names VITE,SEVR \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "vite",
+    "dev:server": "esno server/index.ts",
     "start": "esno server/index.ts",
     "build": "vite build"
   },
@@ -18,6 +20,7 @@
     "@types/react": "^17.0.38",
     "@types/react-dom": "^17.0.11",
     "@vitejs/plugin-react": "^1.1.4",
+    "concurrently": "^7.0.0",
     "postcss": "^8.4.5",
     "tailwindcss": "^3.0.18",
     "typescript": "^4.5.5",
