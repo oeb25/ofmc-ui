@@ -8,7 +8,8 @@
     "dev:client": "vite",
     "dev:server": "esno server/index.ts",
     "start": "esno server/index.ts",
-    "build": "vite build"
+    "build": "vite build",
+    "preview": "npm run build && npm run start"
   },
   "keywords": [],
   "author": "",
