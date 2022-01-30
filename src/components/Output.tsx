@@ -1,4 +1,3 @@
-import { hot } from "react-hot-loader";
 import * as React from "react";
 import * as ofmc from "./ofmc";
 import { Katex } from "./Katex";
@@ -52,7 +51,7 @@ export const Output: React.FC<{
   };
   parsed: ofmc.ParsedOfmc;
   status: ofmc.Status;
-}> = hot(module)(({ result, parsed, status }) => {
+}> = ({ result, parsed, status }) => {
   const [hover, setHover] = React.useState<string | null>(null);
 
   return (
@@ -146,4 +145,4 @@ export const Output: React.FC<{
       )}
     </>
   );
-});
+};
