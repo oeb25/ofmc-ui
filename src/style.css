@@ -1,0 +1,35 @@
+@tailwind base;
+
+@tailwind components;
+
+.katex-html *[class*=" ident-x-"] {
+  position: relative;
+}
+.katex-html *[class*=" ident-x-"]::before {
+  display: block;
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+}
+
+@tailwind utilities;
+
+.spin {
+  animation-name: spin;
+  animation-duration: 500ms;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
