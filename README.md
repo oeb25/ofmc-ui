@@ -1,12 +1,13 @@
-# React / TypeScript / Tailwind / Parcel Starter
+# OFMC-UI
 
-Just clone the repo, update the dependencies, remove the old git repository, create a new, and your are ready to go!
+## Building and running
+
+- You will need to have node installed to build and run the server.
+- Currently the only binary included is the one for macOS.
 
 ```bash
-$ git clone git@github.com:oeb25/react-typescript-tailwind-parcel.git -o project-name
-$ cd project-name
-$ npm update
-$ rm -rf .git
-$ git init
-$ git commit -am 'first commit'
+npm i
+npm run preview
 ```
+
+Now you can go to http://localhost:8080/ and find OFMC-UI.
