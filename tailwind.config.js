@@ -3,8 +3,7 @@
 module.exports = {
   content: ["./public/**/*.html", "./src/**/*.{js,jsx,ts,tsx,vue}"],
   theme: {
-    extend: {
-    },
+    extend: {},
   },
   plugins: [
     // require("@tailwindcss/line-clamp"),

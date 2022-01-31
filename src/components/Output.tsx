@@ -64,7 +64,7 @@ export const Output: React.FC<{
       ) : null}
       {result.stderr == "" && !parsed.attackTrace && (
         <div className="flex items-center justify-center w-full">
-          <p className="p-2 text-xl text-green-300">No attack found</p>
+          <p className="p-2 text-xl text-green-400">No attack found</p>
         </div>
       )}
       {result.stderr == "" &&
@@ -73,10 +73,10 @@ export const Output: React.FC<{
           <div className="w-full">
             <style
               dangerouslySetInnerHTML={{
-                __html: `.${hover} { color: #3e3eee }`,
+                __html: `.${hover} { color: #c594c5 }`,
               }}
             />
-            <p className="p-2 text-xl text-gray-700">Attack found</p>
+            <p className="p-2 text-xl text-gray-200">Attack found</p>
             <div
               className="grid"
               style={{
@@ -84,12 +84,12 @@ export const Output: React.FC<{
                 alignSelf: "baseline",
               }}
             >
-              <div className="pl-2 font-bold text-gray-700 border-t-2">
+              <div className="pl-2 font-bold text-gray-200 border-t-2">
                 From
               </div>
-              <div className="font-bold text-gray-700 border-t-2"></div>
-              <div className="font-bold text-gray-700 border-t-2">To</div>
-              <div className="pr-2 font-bold text-gray-700 border-t-2">
+              <div className="font-bold text-gray-200 border-t-2"></div>
+              <div className="font-bold text-gray-200 border-t-2">To</div>
+              <div className="pr-2 font-bold text-gray-200 border-t-2">
                 Messages
               </div>
               {parsed.attackTrace.map((t, i) => (
@@ -106,7 +106,7 @@ export const Output: React.FC<{
                   <div className="flex flex-col pr-2 border-t-2">
                     {t.msgs.map((m) => (
                       <div
-                      key={m}
+                        key={m}
                         style={{
                           wordBreak: "keep-all",
                           whiteSpace: "nowrap",
@@ -122,13 +122,15 @@ export const Output: React.FC<{
               ))}
             </div>
             <details>
-              <summary className="text-gray-700 outline-none cursor-pointer select-none">
+              <summary className="text-gray-200 outline-none cursor-pointer select-none">
                 Reached state:
               </summary>
               <div style={{ overflowY: "auto" }}>
                 <pre style={{ fontSize: "0.8em", whiteSpace: "pre-wrap" }}>
                   {parsed.reachedState.map((r, i) => (
-                    <p key={r} className="hover:bg-gray-200">{r.substring(2)}</p>
+                    <p key={r} className="hover:bg-gray-200">
+                      {r.substring(2)}
+                    </p>
                   ))}
                 </pre>
               </div>

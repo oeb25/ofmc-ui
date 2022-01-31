@@ -1,7 +1,14 @@
-import * as React from "react";
 import * as monaco from "monaco-editor";
+import * as React from "react";
 import * as ofmc from "./ofmc";
 import { Output } from "./Output";
+import { id } from "../AnB";
+
+const getTheme = async () => {
+  const theme = await import("monaco-themes/themes/Oceanic Next.json");
+  theme.colors["editor.background"] = "#111827";
+  return theme as monaco.editor.IStandaloneThemeData;
+};
 
 export const Editor: React.FC<{
   model: monaco.editor.ITextModel;
@@ -27,14 +34,14 @@ export const Editor: React.FC<{
     if (container) {
       const editor = (editorRef.current = monaco.editor.create(container, {
         model,
-        theme: "vs-light",
+        theme: "my-theme",
         minimap: { enabled: false },
         wordWrap: "bounded",
         wordWrapColumn: 100,
         smoothScrolling: true,
         readOnly,
         lineNumbers: "on",
-        // language: "javascript",
+        language: id,
       }));
 
       // if (themeName) monaco.editor.setTheme(themeName);
@@ -50,6 +57,13 @@ export const Editor: React.FC<{
       editor.setModel(model);
     }
   }, [model, editorRef.current]);
+
+  React.useEffect(() => {
+    getTheme().then((data) => {
+      monaco.editor.defineTheme("my-theme", data);
+      editorRef.current?.updateOptions({ theme: "my-theme" });
+    });
+  }, []);
 
   React.useEffect(() => {
     const listener = () => {
@@ -93,7 +107,7 @@ export const Editor: React.FC<{
   //   }
   // }, [editorRef, targetLine]);
 
-  return <div className="code-editor h-full" ref={setContainer}></div>;
+  return <div className="h-full code-editor" ref={setContainer}></div>;
 };
 
 export const App = () => {
@@ -101,7 +115,7 @@ export const App = () => {
   const parsed = result && ofmc.parseOfmc(result.stdout);
 
   const [model, setModel] = React.useState(
-    monaco.editor.createModel(source, "python")
+    monaco.editor.createModel(source, "AnB")
   );
 
   React.useEffect(() => {
@@ -111,15 +125,15 @@ export const App = () => {
   }, [model, setSource]);
 
   return (
-    <div className="h-screen w-screen flex">
-      <div className="flex flex-1 flex-col">
-        <div className="flex flex-1 w-screen border">
+    <div className="flex w-screen h-screen text-white bg-gray-900">
+      <div className="flex flex-col flex-1">
+        <div className="flex flex-1 w-screen">
           {/* <textarea
             className="flex flex-1 h-full p-2 font-mono"
             value={source}
             onChange={(e) => setSource(e.target.value)}
           ></textarea> */}
-          <div className="h-full w-1/2 p-0 font-mono relative">
+          <div className="relative w-1/2 h-full p-0 font-mono">
             <div
               className="absolute"
               style={{ top: 0, left: 0, right: 0, bottom: 0 }}
@@ -127,7 +141,7 @@ export const App = () => {
               <Editor model={model} size="view" />
             </div>
           </div>
-          <div className="flex flex-1 h-full w-1/2 relative">
+          <div className="relative flex flex-1 w-1/2 h-full">
             {parsed && result ? (
               <Output parsed={parsed} result={result} status={status} />
             ) : (
@@ -144,7 +158,7 @@ export const App = () => {
             )}
           </div>
         </div>
-        <div className="flex justify-between flex-row-reverse p-1">
+        <div className="flex flex-row-reverse justify-between px-2 py-1">
           {[
             [
               "Status",
@@ -166,7 +180,7 @@ export const App = () => {
               : []),
           ].map(([title, text, sub = text], i) => (
             <div
-              className="flex items-center"
+              className="flex items-baseline"
               key={title}
               style={{
                 whiteSpace: "nowrap",
@@ -176,8 +190,8 @@ export const App = () => {
               }}
               title={sub as string}
             >
-              <span className="text-gray-500 text-sm mr-1">{title}:</span>{" "}
-              <span className="text-gray-700 text-sm">
+              <span className="mr-1 text-sm text-gray-400">{title}:</span>{" "}
+              <span className="text-sm text-gray-500">
                 {typeof text == "string" ? text.split("\n")[0] : text}
               </span>
             </div>
