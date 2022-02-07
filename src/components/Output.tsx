@@ -127,8 +127,8 @@ export const Output: React.FC<{
               </summary>
               <div style={{ overflowY: "auto" }}>
                 <pre style={{ fontSize: "0.8em", whiteSpace: "pre-wrap" }}>
-                  {parsed.reachedState.map((r, i) => (
-                    <p key={r} className="hover:bg-gray-200">
+                  {parsed.reachedState.map((r) => (
+                    <p key={r} className="hover:bg-gray-800">
                       {r.substring(2)}
                     </p>
                   ))}

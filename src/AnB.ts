@@ -14,6 +14,14 @@ monaco.languages.register({
   mimetypes: ["application/anb"],
 });
 
+monaco.languages.setLanguageConfiguration(id, {
+  comments: { lineComment: "#" },
+  brackets: [
+    ["{|", "|}"],
+    ["{", "}"],
+    ["(", ")"],
+  ],
+});
 monaco.languages.setMonarchTokensProvider(id, {
   keywords,
   tokenizer: {

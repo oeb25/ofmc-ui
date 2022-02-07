@@ -81,6 +81,30 @@ i -> (x401,1): {|h(g,exp(g,Y(1)))|}_(clientK(exp(g,Y(1)))),{|data,x404|}_(client
 
 `;
 
+const SAMPLE2 = `Protocol: Test
+
+Types: Agent A,B,s;
+       Number NA,NB;
+       Symmetric_key KAB;
+       Function sk
+
+Knowledge:
+    A: A,B,s,sk(A,s);
+    B: A,B,s,sk(B,s);
+    s: A,B,s,sk(A,s),sk(B,s)
+
+Actions:
+  B->A: B,A,NB
+  A->s: {| A,B,NA,NB |}sk(A,s)
+  s->A: {| A,B,KAB,NA, {| A,B,KAB,NA,NB |}sk(B,s) |}sk(A,s)
+  A->B: {| A,B,KAB,NA,NB |}sk(B,s)
+
+Goals:
+  A authenticates s on KAB,B
+  B authenticates s on KAB,A
+  KAB secret between A,B,s
+`;
+
 const parseTrace = (trace: string) => {
   const from = trace.substring(0, trace.indexOf(" -> "));
   const to = trace.substring(trace.indexOf(" -> ") + 4, trace.indexOf(": "));
