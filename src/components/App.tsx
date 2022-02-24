@@ -13,22 +13,12 @@ const getTheme = async () => {
 export const Editor: React.FC<{
   model: monaco.editor.ITextModel;
   size: any;
-  targetLine?: null | { line: number };
   readOnly?: boolean;
-  fitContentHeight?: boolean;
-}> = ({
-  model,
-  size,
-  targetLine = null,
-  readOnly = false,
-  fitContentHeight = false,
-}) => {
+}> = ({ model, size, readOnly = false }) => {
   const [container, setContainer] = React.useState<HTMLDivElement | null>(null);
   const editorRef = React.useRef<null | monaco.editor.IStandaloneCodeEditor>(
     null
   );
-
-  // const { themeName, themeData } = React.useContext(ThemeContext);
 
   React.useEffect(() => {
     if (container) {
@@ -44,7 +34,6 @@ export const Editor: React.FC<{
         language: id,
       }));
 
-      // if (themeName) monaco.editor.setTheme(themeName);
       return () => {
         editor.dispose();
       };
@@ -82,31 +71,6 @@ export const Editor: React.FC<{
     return () => window.removeEventListener("resize", listener);
   }, [editorRef.current, size]);
 
-  // React.useEffect(() => {
-  //   if (!themeName || !themeData) return;
-  //   monaco.editor.defineTheme(themeName, themeData);
-  //   monaco.editor.setTheme(themeName);
-  // }, [themeName, themeData]);
-
-  // React.useEffect(() => {
-  //   const editor = editorRef.current;
-  //   if (editor && targetLine) {
-  //     const range = {
-  //       startLineNumber: targetLine.line,
-  //       startColumn: 0,
-  //       endLineNumber: targetLine.line,
-  //       endColumn: 0,
-  //     };
-  //     editor.revealRangeAtTop(range, monaco.editor.ScrollType.Smooth);
-  //     editor.setSelection({
-  //       ...range,
-  //       startLineNumber: range.startLineNumber + 1,
-  //       endLineNumber: range.endLineNumber + 1,
-  //     });
-  //     editor.focus();
-  //   }
-  // }, [editorRef, targetLine]);
-
   return <div className="h-full code-editor" ref={setContainer}></div>;
 };
 
@@ -114,89 +78,71 @@ export const App = () => {
   const { source, setSource, result, status } = ofmc.useOfmc();
   const parsed = result && ofmc.parseOfmc(result.stdout);
 
-  const [model, setModel] = React.useState(
-    monaco.editor.createModel(source, "AnB")
-  );
+  const [model] = React.useState(monaco.editor.createModel(source, "AnB"));
 
   React.useEffect(() => {
-    const r = model.onDidChangeContent((e) => setSource(model.getValue()));
+    const r = model.onDidChangeContent(() => setSource(model.getValue()));
 
     return () => r.dispose();
   }, [model, setSource]);
 
   return (
-    <div className="flex w-screen h-screen text-white bg-gray-900">
-      <div className="flex flex-col flex-1">
-        <div className="flex flex-1 w-screen">
-          {/* <textarea
-            className="flex flex-1 h-full p-2 font-mono"
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-          ></textarea> */}
-          <div className="relative w-1/2 h-full p-0 font-mono">
-            <div
-              className="absolute"
-              style={{ top: 0, left: 0, right: 0, bottom: 0 }}
-            >
-              <Editor model={model} size="view" />
-            </div>
-          </div>
-          <div className="relative flex flex-1 w-1/2 h-full">
-            {parsed && result ? (
-              <Output parsed={parsed} result={result} status={status} />
-            ) : (
-              <h1
-                className="w-full italic"
-                style={{
-                  alignSelf: "center",
-                  justifySelf: "center",
-                  textAlign: "center",
-                }}
-              >
-                Loading...
-              </h1>
-            )}
-          </div>
+    <div
+      className="grid w-screen h-screen"
+      style={{ gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr auto" }}
+    >
+      {/* Input */}
+      <div className="relative font-mono">
+        <div className="absolute inset-0">
+          <Editor model={model} size="view" />
         </div>
-        <div className="flex flex-row-reverse justify-between px-2 py-1">
-          {[
-            [
-              "Status",
-              <div
-                title={status}
-                className={`w-2 h-2 rounded ${
-                  status == "IDLE" ? "bg-green-400" : "bg-yellow-400"
-                }`}
-              ></div>,
-              status,
-            ] as const,
-            ...(result?.stderr == "" && parsed
-              ? [
-                  ["Summary", parsed.summary],
-                  ["Goal", parsed.goal],
-                  // ["Backend", parsed.backend],
-                  ["Statistics", parsed.statistics.join("\n")],
-                ]
-              : []),
-          ].map(([title, text, sub = text], i) => (
+      </div>
+      {/* Output */}
+      <div className="relative flex overflow-auto">
+        {parsed && result ? (
+          <Output parsed={parsed} result={result} status={status} />
+        ) : (
+          <h1 className="self-center w-full italic text-center justify-self-center">
+            Loading...
+          </h1>
+        )}
+      </div>
+      {/* Status bar */}
+      <div className="flex flex-row-reverse justify-between px-2 py-1 col-span-full">
+        {[
+          [
+            "Status",
             <div
-              className="flex items-baseline"
-              key={title}
-              style={{
-                whiteSpace: "nowrap",
-                textOverflow: "ellipsis",
-                overflow: "hidden",
-                maxWidth: "15em",
-              }}
-              title={sub as string}
-            >
-              <span className="mr-1 text-sm text-gray-400">{title}:</span>{" "}
-              <span className="text-sm text-gray-500">
-                {typeof text == "string" ? text.split("\n")[0] : text}
-              </span>
-            </div>
-          ))}
-        </div>
+              title={status}
+              className={`w-2 h-2 rounded ${
+                status == "IDLE" ? "bg-green-400" : "bg-yellow-400"
+              }`}
+            />,
+            status,
+          ] as const,
+          ...(result?.stderr == "" && parsed
+            ? [
+                ["Summary", parsed.summary],
+                ["Goal", parsed.goal],
+                // ["Backend", parsed.backend],
+                ["Statistics", parsed.statistics.join("\n")],
+              ]
+            : []),
+        ].map(([title, text, sub = text]) => (
+          <div
+            className="flex items-baseline overflow-hidden whitespace-nowrap text-ellipsis"
+            key={title}
+            style={{
+              maxWidth: "15em",
+            }}
+            title={sub as string}
+          >
+            <span className="mr-1 text-sm text-gray-400">{title}:</span>{" "}
+            <span className="text-sm text-gray-500">
+              {typeof text == "string" ? text.split("\n")[0] : text}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );

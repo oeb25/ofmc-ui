@@ -105,30 +105,218 @@ Goals:
   KAB secret between A,B,s
 `;
 
+type Token =
+  | { type: "ident"; name: string }
+  | { type: "lsym" }
+  | { type: "rsym" }
+  | { type: "lenc" }
+  | { type: "renc" }
+  | { type: "lparen" }
+  | { type: "rparen" }
+  | { type: "_" }
+  | { type: "comma" }
+  | { type: "number"; value: number };
+const tokenizeMsg = (src: string): Token[] => {
+  const tokens: Token[] = [];
+  let res: RegExpMatchArray | null = null;
+
+  while (src.length > 0) {
+    if ((res = src.match(/^[a-zA-Z][a-zA-Z0-9_]*/))) {
+      tokens.push({ type: "ident", name: res[0] });
+    } else if ((res = src.match(/^{\|/))) {
+      tokens.push({ type: "lsym" });
+    } else if ((res = src.match(/^\|}/))) {
+      tokens.push({ type: "rsym" });
+    } else if ((res = src.match(/^{/))) {
+      tokens.push({ type: "lenc" });
+    } else if ((res = src.match(/^}/))) {
+      tokens.push({ type: "renc" });
+    } else if ((res = src.match(/^\(/))) {
+      tokens.push({ type: "lparen" });
+    } else if ((res = src.match(/^\)/))) {
+      tokens.push({ type: "rparen" });
+    } else if ((res = src.match(/^_/))) {
+      tokens.push({ type: "_" });
+    } else if ((res = src.match(/^,/))) {
+      tokens.push({ type: "comma" });
+    } else if ((res = src.match(/^\d+/))) {
+      tokens.push({ type: "number", value: parseInt(res[0]) });
+    }
+    if (!res) break;
+    src = src.substring(res[0].length);
+  }
+
+  return tokens;
+};
+
+const see = (tokens: Token[], ty: Token["type"]) => tokens[0]?.type == ty;
+const have = <K extends Token["type"]>(tokens: Token[], ty: K) => {
+  if (see(tokens, ty)) {
+    return tokens.splice(0, 1)[0] as Token extends infer T
+      ? T extends { type: K }
+        ? T
+        : never
+      : never;
+  }
+};
+const mustHave = <K extends Token["type"]>(tokens: Token[], ty: K) => {
+  if (see(tokens, ty)) {
+    return tokens.splice(0, 1)[0] as Token extends infer T
+      ? T extends { type: K }
+        ? T
+        : never
+      : never;
+  }
+  throw new Error(`Parse error: Expected ${ty} at ${JSON.stringify(tokens)}`);
+};
+
+export type Term =
+  | { type: "num"; value: number }
+  | { type: "ident"; name: string }
+  | { type: "fun"; name: string; args: Term[] }
+  | { type: "tuple"; msgs: Term[] }
+  | {
+      type: "sym";
+      msgs: Term[];
+      key: Term;
+    }
+  | {
+      type: "enc";
+      msgs: Term[];
+      key: Term;
+    };
+
+const comma = (tokens: Token[]): Term[] => {
+  const msgs: Term[] = [];
+  do {
+    msgs.push(parseMsg(tokens));
+  } while (have(tokens, "comma"));
+  return msgs;
+};
+const parseMsg = (tokens: Token[]): Term => {
+  let x;
+  if ((x = have(tokens, "number"))) {
+    return { type: "num", value: x.value };
+  } else if ((x = have(tokens, "ident"))) {
+    const name = x.name;
+    if ((x = have(tokens, "lparen"))) {
+      const args = comma(tokens);
+      mustHave(tokens, "rparen");
+      return { type: "fun", name, args };
+    } else {
+      return { type: "ident", name };
+    }
+  } else if ((x = have(tokens, "lsym"))) {
+    const msgs = comma(tokens);
+    mustHave(tokens, "rsym");
+    mustHave(tokens, "_");
+    const key = parseMsg(tokens);
+    return { type: "sym", msgs, key };
+  } else if ((x = have(tokens, "lenc"))) {
+    const msgs = comma(tokens);
+    mustHave(tokens, "renc");
+    mustHave(tokens, "_");
+    const key = parseMsg(tokens);
+    return { type: "enc", msgs, key };
+  } else if ((x = have(tokens, "lparen"))) {
+    const inner = parseMsg(tokens);
+    mustHave(tokens, "rparen");
+
+    return inner;
+  }
+
+  throw new Error("parse error: " + JSON.stringify(tokens));
+};
+
+export const msgToPretty = (term: Term): string => {
+  switch (term.type) {
+    case "ident":
+      return term.name;
+    case "num":
+      return term.value.toString();
+    case "tuple":
+      return `(${term.msgs.map(msgToPretty).join(", ")})`;
+    case "fun":
+      return `${term.name}(${term.args.map(msgToPretty).join(", ")})`;
+    case "sym":
+      return `{| ${term.msgs.map(msgToPretty).join(", ")} |}${msgToPretty(
+        term.key
+      )}`;
+    case "enc":
+      return `{ ${term.msgs.map(msgToPretty).join(", ")} }${msgToPretty(
+        term.key
+      )}`;
+  }
+};
+
+export type Aliases = Record<string, { name?: string; color?: string } | void>;
+export const msgToLaTeX = (
+  msg: Term,
+  aliases: Aliases,
+  opts: { pretty?: boolean }
+): string => {
+  switch (msg.type) {
+    case "ident": {
+      const name = aliases[msg.name]?.name || msg.name;
+      const color = aliases[msg.name]?.color;
+      return `\\text{${
+        color ? `\\htmlStyle{color: ${color};}{${name}}` : name
+      }}`;
+    }
+    case "num":
+      return msg.value.toString();
+    case "tuple":
+      if (opts.pretty && msg.msgs.length == 2 && msg.msgs[1].type == "num")
+        return (
+          msgToLaTeX(msg.msgs[0], aliases, opts) + `^{${msg.msgs[1].value}}`
+        );
+      return `\\left(${msg.msgs
+        .map((m) => msgToLaTeX(m, aliases, opts))
+        .join(", ")}\\right)`;
+    case "fun":
+      if (opts.pretty && msg.args.length == 1 && msg.args[0].type == "num")
+        return (
+          msgToLaTeX({ type: "ident", name: msg.name }, aliases, opts) +
+          `_{${msg.args[0].value}}`
+        );
+      const color = msg.name == "inv" ? "lightblue" : aliases[msg.name]?.color;
+      const name = `\\htmlStyle{color: ${color};}{${msg.name}}`;
+      return `\\text{${name}}(${msg.args
+        .map((m) => msgToLaTeX(m, aliases, opts))
+        .join(", ")})`;
+    case "sym":
+      return `\\left\\{\\!\\!\\left|${msg.msgs
+        .map((m) => msgToLaTeX(m, aliases, opts))
+        .join(", ")}\\right|\\!\\!\\right\\}_{${msgToLaTeX(
+        msg.key,
+        aliases,
+        opts
+      )}}`;
+    case "enc":
+      return `\\left\\{${msg.msgs
+        .map((m) => msgToLaTeX(m, aliases, opts))
+        .join(", ")}\\right\\}_{${msgToLaTeX(msg.key, aliases, opts)}}`;
+  }
+};
+
+const parseActor = (actor: string): Term => {
+  const tokens = tokenizeMsg(actor);
+  if (have(tokens, "lparen")) {
+    const msgs = comma(tokens);
+    mustHave(tokens, "rparen");
+    return { type: "tuple", msgs };
+  }
+  return parseMsg(tokens);
+};
+
 const parseTrace = (trace: string) => {
-  const from = trace.substring(0, trace.indexOf(" -> "));
-  const to = trace.substring(trace.indexOf(" -> ") + 4, trace.indexOf(": "));
+  const from = parseActor(trace.substring(0, trace.indexOf(" -> ")));
+  const to = parseActor(
+    trace.substring(trace.indexOf(" -> ") + 4, trace.indexOf(": "))
+  );
 
   const msgsRaw = trace.substring(trace.indexOf(": ") + 2);
-
-  const msgs = [];
-
-  let depth = 0;
-  let last = 0;
-
-  for (let i = 0; i < msgsRaw.length; i++) {
-    let c = msgsRaw[i];
-    // We don't care which type of bracket we see, since we assume the message to be well formed.
-    if (c == "(" || c == "{" || c == "[") {
-      depth += 1;
-    } else if (c == ")" || c == "}" || c == "]") {
-      depth -= 1;
-    } else if (depth == 0 && c == ",") {
-      msgs.push(msgsRaw.substring(last, i));
-      last = i + 1;
-    }
-  }
-  msgs.push(msgsRaw.substring(last));
+  const msgs = comma(tokenizeMsg(msgsRaw));
 
   return { from, to, msgs };
 };
@@ -226,51 +414,4 @@ export const useOfmc = () => {
   }, [source]);
 
   return { status, source, setSource, result };
-};
-
-const findEndOfExpr = (msg: string, i: number) => {
-  let depth = 0;
-  let any = false;
-
-  for (; i < msg.length; i++) {
-    let c = msg[i];
-    // We don't care which type of bracket we see, since we assume the message to be well formed.
-    if (c == "(" || c == "{" || c == "[") {
-      any = true;
-      depth += 1;
-    } else if (c == ")" || c == "}" || c == "]") {
-      depth -= 1;
-    } else if (depth == 0 && any) {
-      return i;
-    }
-  }
-
-  return i;
-};
-
-const replaceAll = (x: string, pat: RegExp, res: string): string =>
-  (x as any).replaceAll(pat, res);
-
-export const msgToLatex = (msg: string) => {
-  let msg2 = msg
-    .replace(/exp\(/g, "\\exp(")
-    .replace(/{/g, "\\left\\{")
-    .replace(/\\left\\{\|/g, "\\left\\{\\left|")
-    .replace(/}/g, "\\right\\}")
-    .replace(/\|\\right\\}/g, "\\right|\\right\\}")
-    .replace(/pk\(/g, "\\htmlStyle{color: maroon;}{pk}(");
-
-  let last = 0;
-  let current = 0;
-
-  while ((current = msg2.indexOf("_", last)) >= 0) {
-    last = current + 1;
-    const end = findEndOfExpr(msg2, current);
-    msg2 = msg2.replace(
-      msg2.slice(current, end),
-      `_\{${msg2.slice(current + 1, end)}\}`
-    );
-  }
-
-  return replaceAll(msg2, /x(\d+)/g, "\\htmlClass{ident-x-$1}{x_{$1}}");
 };

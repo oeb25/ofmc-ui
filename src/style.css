@@ -1,5 +1,10 @@
 @tailwind base;
 
+html,
+body {
+  @apply text-white bg-gray-900;
+}
+
 @tailwind components;
 
 .katex-html *[class*=" ident-x-"] {
