@@ -1,5 +1,7 @@
 # OFMC-UI
 
+![](preview.png)
+
 ## Building and running
 
 - You will need to have node installed to build and run the server.
